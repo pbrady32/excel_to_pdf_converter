@@ -13,7 +13,5 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-ENV OUTPUT_BUCKET=""
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

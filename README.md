@@ -202,6 +202,10 @@ firebase-admin
 
 (We no longer require pypdf or qpdf for MVP since we’re generating an interactive form, not flattening.)
 
+# Run locally
+
+uv run uvicorn app.main:app --reload
+
 ⸻
 
 Deploy (Cloud Run)
