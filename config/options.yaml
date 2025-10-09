@@ -1,0 +1,6 @@
+choice_style: "checkbox" # "checkbox" | "radio"
+radio_values:
+  uploaded: "uploaded"
+  not_needed: "not_needed"
+prefix_mode: "verbatim" # "auto" | "verbatim"
+auto_prefix: "Please upload your "

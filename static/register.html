@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account · Client Worksheet Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-brand-50: #f9f5fb;
+        --color-brand-100: #f3eafa;
+        --color-brand-200: #e5d0f2;
+        --color-brand-300: #d0a9e5;
+        --color-brand-400: #b676d3;
+        --color-brand-500: #712674;
+        --color-brand-600: #641f67;
+        --color-brand-700: #551a57;
+        --color-brand-800: #3c123d;
+        --color-brand-900: #250a24;
+      }
+    </style>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        createUserWithEmailAndPassword,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey:
+          window.FIREBASE_API_KEY || "AIzaSyDwdStHptGQmPuQPR2wkMLb0t4UzhfmNNo",
+        authDomain:
+          window.FIREBASE_AUTH_DOMAIN || "john-excel-to-pdf.firebaseapp.com",
+        projectId: window.FIREBASE_PROJECT_ID || "john-excel-to-pdf",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+
+      const statusEl = document.getElementById("status");
+      const registerForm = document.getElementById("email-register-form");
+      const loginLink = document.getElementById("login-link");
+      const statusBaseClasses =
+        "mt-4 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition";
+      const statusVariants = {
+        info: "border-brand-200/70 bg-brand-50 text-brand-700",
+        success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        error: "border-rose-200 bg-rose-50 text-rose-700",
+      };
+
+      function setStatus(message, variant = "info") {
+        if (!statusEl) return;
+        statusEl.textContent = message;
+        statusEl.className = `${statusBaseClasses} ${
+          statusVariants[variant] || statusVariants.info
+        }`;
+      }
+
+      async function createAccountWithGoogle() {
+        try {
+          await signInWithPopup(auth, provider);
+          setStatus("Account ready! Redirecting to dashboard...", "success");
+          window.location.replace("/");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      }
+
+      async function registerWithEmail(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const email = String(formData.get("email") || "").trim();
+        const password = String(formData.get("password") || "").trim();
+        const confirm = String(formData.get("confirm") || "").trim();
+        if (!email || !password) {
+          setStatus("Email and password are required.", "error");
+          return;
+        }
+        if (password !== confirm) {
+          setStatus("Passwords do not match.", "error");
+          return;
+        }
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+          setStatus("Welcome aboard! Redirecting...", "success");
+          window.location.replace("/");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      }
+
+      document
+        .getElementById("google-register")
+        .addEventListener("click", createAccountWithGoogle);
+      registerForm.addEventListener("submit", registerWithEmail);
+      loginLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.location.assign("/login");
+      });
+
+      setStatus("Provide your details to sign up.");
+    </script>
+  </head>
+  <body class="bg-slate-100 text-slate-900">
+    <main class="flex min-h-screen items-center justify-center px-6 py-12">
+      <section
+        class="w-full max-w-md rounded-2xl bg-white/95 p-8 shadow-xl ring-1 ring-slate-200"
+      >
+        <header class="space-y-3 text-center">
+          <h1 class="text-3xl font-semibold text-slate-900">
+            Create an Account
+          </h1>
+          <p id="status" class="text-sm text-slate-500"></p>
+        </header>
+        <div class="mt-6 space-y-4">
+          <button
+            id="google-register"
+            class="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200 hover:text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 cursor-pointer"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              class="h-5 w-5"
+            >
+              <path
+                d="M23.04 12.2613C23.04 11.4465 22.9691 10.6617 22.8373 9.90686H12V14.3685H18.1891C17.9225 15.8069 17.1448 17.0084 15.9432 17.8084V20.7135H19.68C21.76 18.8069 23.04 15.8084 23.04 12.2613Z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23.4987C15.24 23.4987 17.9563 22.4243 19.68 20.7135L15.9432 17.8084C14.9646 18.4659 13.6546 18.8645 12 18.8645C8.87437 18.8645 6.2295 16.9343 5.28563 14.1069H1.42125V17.1029C3.13499 20.8845 7.24249 23.4987 12 23.4987Z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.28563 14.1069C5.04563 13.4494 4.90937 12.7394 4.90937 12.0029C4.90937 11.2665 5.04563 10.5565 5.28563 9.89898V6.90295H1.42125C0.645 8.61867 0.21125 10.483 0.21125 12.5029C0.21125 14.5229 0.645 16.3872 1.42125 18.1029L5.28563 14.1069Z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.14141C13.8075 5.14141 15.4075 5.7623 16.6784 6.96382L19.7713 3.87087C17.9513 2.18909 15.235 1.00732 12 1.00732C7.24249 1.00732 3.13499 3.62162 1.42125 7.40318L5.28563 11.3992C6.2295 8.57178 8.87437 6.64156 12 6.64156C13.6546 6.64156 14.9646 7.04018 15.9432 7.69764L19.68 4.79251C17.9563 3.08174 15.24 2.00732 12 2.00732V5.14141Z"
+                fill="#EA4335"
+              />
+            </svg>
+            Sign up with Google
+          </button>
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+              <span class="w-full border-t border-slate-200"></span>
+            </div>
+            <div class="relative flex justify-center">
+              <span
+                class="bg-white px-2 text-xs font-medium uppercase tracking-wider text-slate-400"
+              >
+                Or create an account with email
+              </span>
+            </div>
+          </div>
+          <form id="email-register-form" class="space-y-5">
+            <div class="space-y-2">
+              <label for="email" class="text-sm font-semibold text-slate-600">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                class="block w-full rounded-lg border-1 border-brand-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              />
+            </div>
+            <div class="space-y-2">
+              <label
+                for="password"
+                class="text-sm font-semibold text-slate-600"
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                class="block w-full rounded-lg border-1 border-brand-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="confirm" class="text-sm font-semibold text-slate-600">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirm"
+                name="confirm"
+                required
+                class="block w-full rounded-lg border-1 border-brand-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              />
+            </div>
+            <button
+              type="submit"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 cursor-pointer"
+            >
+              Create Account
+            </button>
+          </form>
+        </div>
+        <footer class="mt-8 text-center text-sm text-slate-500">
+          Already registered?
+          <a
+            href="/login"
+            id="login-link"
+            class="font-semibold text-brand-600 hover:text-brand-500"
+          >
+            Sign in here
+          </a>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>

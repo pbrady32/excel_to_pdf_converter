@@ -1,0 +1,26 @@
+year_label_template: "Client Worksheet ({year})"
+logo_path: "static/logo.png" # path within container; leave blank to skip
+page_size: "LETTER"
+margins:
+  left: 54
+  right: 54
+  top: 10
+  bottom: 54
+fonts:
+  base: "Helvetica"
+  bold: "Helvetica-Bold"
+  sizes:
+    title: 34
+    client_name: 16
+    item_text: 12
+    column_header: 12
+row_layout:
+  row_height: 56
+  item_text_width: 380
+  textfield_width: 380
+  textfield_height: 32
+  gap_x: 16
+columns:
+  uploaded_label: "Uploaded"
+  not_needed_label: "Not Needed"
+  checkbox_size: 24

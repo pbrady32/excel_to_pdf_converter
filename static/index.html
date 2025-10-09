@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client Worksheet Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-brand-50: #f9f5fb;
+        --color-brand-100: #f3eafa;
+        --color-brand-200: #e5d0f2;
+        --color-brand-300: #d0a9e5;
+        --color-brand-400: #b676d3;
+        --color-brand-500: #673095;
+        --color-brand-600: #641f67;
+        --color-brand-700: #551a57;
+        --color-brand-800: #3c123d;
+        --color-brand-900: #250a24;
+      }
+    </style>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey:
+          window.FIREBASE_API_KEY || "AIzaSyDwdStHptGQmPuQPR2wkMLb0t4UzhfmNNo",
+        authDomain:
+          window.FIREBASE_AUTH_DOMAIN || "john-excel-to-pdf.firebaseapp.com",
+        projectId: window.FIREBASE_PROJECT_ID || "john-excel-to-pdf",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const views = {
+        app: document.getElementById("app-view"),
+        status: document.getElementById("status"),
+        avatar: document.getElementById("user-avatar"),
+        userInitial: document.getElementById("user-initial"),
+        userName: document.getElementById("user-name"),
+        loginBtn: document.getElementById("login-btn"),
+        logoutBtn: document.getElementById("logout-btn"),
+        userEmail: document.getElementById("user-email"),
+        dropZone: document.getElementById("drop-zone"),
+        dropZoneText: document.getElementById("drop-zone-text"),
+        uploadForm: document.getElementById("upload-form"),
+        submitBtn: document.getElementById("submit-btn"),
+        fileInput: document.getElementById("file-input"),
+        results: document.getElementById("results"),
+        downloadLink: document.getElementById("download-link"),
+        itemsCount: document.getElementById("items-count"),
+        pageCount: document.getElementById("page-count"),
+        filename: document.getElementById("filename"),
+      };
+
+      const loginUrl = new URL("/login", window.location.origin);
+      const registerUrl = new URL("/register", window.location.origin);
+
+      function resetDropZone(
+        message = "Drag and drop an Excel file here, or click to browse"
+      ) {
+        if (views.dropZone) {
+          views.dropZone.classList.remove("has-file");
+          views.dropZoneText.textContent = message;
+        }
+      }
+
+      function setSelectedFile(file) {
+        if (!file) {
+          resetDropZone();
+          return;
+        }
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        views.fileInput.files = dt.files;
+        if (views.dropZone) {
+          views.dropZone.classList.add("has-file");
+          views.dropZoneText.textContent = `Selected: ${file.name}`;
+        }
+      }
+
+      function handleDragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        views.dropZone.classList.add("drag-hover");
+      }
+
+      function handleDragLeave(event) {
+        event.preventDefault();
+        views.dropZone.classList.remove("drag-hover");
+      }
+
+      function handleDrop(event) {
+        event.preventDefault();
+        views.dropZone.classList.remove("drag-hover");
+        const files = event.dataTransfer.files;
+        if (!files || !files.length) {
+          return;
+        }
+        const file = files[0];
+        if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
+          views.status.textContent =
+            "Unsupported file type. Please upload an Excel file (.xlsx, .xls, .csv).";
+          return;
+        }
+        setSelectedFile(file);
+        views.status.textContent = `Ready to process ${file.name}.`;
+      }
+
+      function handleDropZoneClick() {
+        views.fileInput.click();
+      }
+
+      function handleDropZoneKey(event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          views.fileInput.click();
+        }
+      }
+
+      async function logout() {
+        await signOut(auth);
+        window.location.assign(loginUrl);
+      }
+
+      async function handleUpload(event) {
+        event.preventDefault();
+        const file = views.fileInput.files[0];
+        if (!file) {
+          views.status.textContent = "Please select an Excel file.";
+          return;
+        }
+        views.submitBtn.setAttribute("aria-busy", "true");
+        views.status.textContent = "Generating worksheet...";
+        views.results.hidden = true;
+        try {
+          const token = await auth.currentUser.getIdToken();
+          const formData = new FormData();
+          formData.append("file", file);
+          const response = await fetch("/generate", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.detail || "Failed to generate worksheet");
+          }
+          views.downloadLink.href = payload.download_url;
+          views.downloadLink.textContent = "Download Worksheet";
+          views.itemsCount.textContent = payload.items;
+          views.pageCount.textContent = payload.page_count;
+          views.filename.textContent = payload.filename;
+          views.results.hidden = false;
+          views.status.textContent = "Worksheet ready.";
+        } catch (error) {
+          views.status.textContent = error.message;
+        } finally {
+          views.submitBtn.removeAttribute("aria-busy");
+        }
+      }
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          views.app.hidden = false;
+          if (
+            window.location.pathname === loginUrl.pathname ||
+            window.location.pathname === registerUrl.pathname
+          ) {
+            window.location.replace("/");
+          }
+          const displayName = (user.displayName || "").trim();
+          const greetingName = displayName || user.email || "there";
+          if (views.userName) {
+            views.userName.textContent = greetingName;
+            views.userName.hidden = false;
+          }
+          if (views.userEmail) {
+            views.userEmail.textContent = user.email || "";
+            views.userEmail.hidden = false;
+          }
+          if (views.loginBtn) {
+            views.loginBtn.hidden = true;
+          }
+          if (views.logoutBtn) {
+            views.logoutBtn.hidden = false;
+          }
+          if (views.avatar) {
+            if (user.photoURL) {
+              views.avatar.src = user.photoURL;
+              views.avatar.alt = `Profile photo for ${greetingName}`;
+              views.avatar.hidden = false;
+              if (views.userInitial) {
+                views.userInitial.hidden = true;
+                views.userInitial.textContent = "";
+              }
+            } else {
+              views.avatar.hidden = true;
+              if (views.userInitial) {
+                const fallbackInitial = (
+                  greetingName.trim().charAt(0) ||
+                  (user.email || "").charAt(0) ||
+                  "?"
+                ).toUpperCase();
+                views.userInitial.textContent = fallbackInitial;
+                views.userInitial.hidden = false;
+              }
+            }
+          }
+        } else {
+          views.app.hidden = true;
+          if (
+            window.location.pathname !== loginUrl.pathname &&
+            window.location.pathname !== registerUrl.pathname
+          ) {
+            window.location.replace(loginUrl);
+          }
+          views.status.textContent = "Please sign in.";
+          if (views.userName) {
+            views.userName.textContent = "";
+            views.userName.hidden = true;
+          }
+          if (views.userEmail) {
+            views.userEmail.textContent = "";
+            views.userEmail.hidden = true;
+          }
+          if (views.loginBtn) {
+            views.loginBtn.hidden = false;
+          }
+          if (views.logoutBtn) {
+            views.logoutBtn.hidden = true;
+          }
+          if (views.avatar) {
+            views.avatar.hidden = true;
+          }
+          if (views.userInitial) {
+            views.userInitial.hidden = true;
+            views.userInitial.textContent = "";
+          }
+        }
+      });
+      if (views.logoutBtn) {
+        views.logoutBtn.addEventListener("click", logout);
+      }
+      if (views.loginBtn) {
+        views.loginBtn.addEventListener("click", () => {
+          window.location.assign(loginUrl);
+        });
+      }
+      views.fileInput.addEventListener("change", () => {
+        const file = views.fileInput.files[0];
+        if (file) {
+          setSelectedFile(file);
+          views.status.textContent = `Ready to upload ${file.name}.`;
+        } else {
+          resetDropZone();
+        }
+      });
+      if (views.dropZone) {
+        views.dropZone.addEventListener("dragover", handleDragOver);
+        views.dropZone.addEventListener("dragleave", handleDragLeave);
+        views.dropZone.addEventListener("drop", handleDrop);
+        views.dropZone.addEventListener("click", handleDropZoneClick);
+        views.dropZone.addEventListener("keydown", handleDropZoneKey);
+        resetDropZone();
+      }
+      views.uploadForm.addEventListener("submit", handleUpload);
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      .drop-zone {
+        transition: border-color 0.2s ease, background-color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+      .drop-zone.drag-hover {
+        border-color: #712674;
+        background-color: rgba(113, 38, 116, 0.08);
+        box-shadow: 0 10px 30px -12px rgba(113, 38, 116, 0.45);
+      }
+      .drop-zone.has-file {
+        border-color: #712674;
+      }
+      .file-input-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-100 text-slate-900">
+    <main class="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-10">
+      <header
+        class="flex flex-col gap-6 rounded-2xl bg-white/90 p-6 shadow-lg shadow-slate-900/5 ring-1 ring-slate-200 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div
+          class="flex flex-col items-start gap-4 sm:flex-row sm:items-center"
+        >
+          <img
+            src="/static/logo.png"
+            alt="ICPA logo"
+            class="h-16 w-16 flex-shrink-0 rounded-xl border border-brand-200 bg-white object-contain shadow-sm"
+          />
+          <div class="space-y-2">
+            <h1 class="text-3xl font-semibold text-slate-900 sm:text-4xl">
+              Client Worksheet Generator
+            </h1>
+            <p
+              id="status"
+              class="max-w-xl rounded-lg border border-brand-200/70 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700 shadow-sm"
+              aria-live="polite"
+            ></p>
+          </div>
+        </div>
+
+        <div
+          class="flex items-center justify-end gap-4 rounded-xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-brand-200 bg-brand-50 text-lg font-semibold text-brand-700"
+            >
+              <span id="user-initial" hidden></span>
+              <img
+                id="user-avatar"
+                hidden
+                class="h-full w-full object-cover"
+                src=""
+                alt="User avatar"
+              />
+            </div>
+            <div class="flex flex-col text-right">
+              <span
+                id="user-name"
+                class="text-sm font-semibold text-slate-900"
+                hidden
+              >
+              </span>
+              <span id="user-email" class="text-xs text-slate-500" hidden>
+              </span>
+            </div>
+          </div>
+          <button
+            id="login-btn"
+            class="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-600 shadow-sm transition hover:border-brand-300 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+          >
+            Sign In
+          </button>
+          <button
+            id="logout-btn"
+            hidden
+            class="inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 cursor-pointer"
+          >
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      <section
+        id="app-view"
+        hidden
+        class="rounded-2xl bg-white/95 p-8 shadow-xl ring-1 ring-slate-200"
+      >
+        <div
+          class="flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div class="flex items-center gap-4">
+            <img
+              id="user-avatar"
+              hidden
+              class="h-12 w-12 rounded-full border-2 border-brand-200 object-cover"
+              src=""
+              alt="User avatar"
+            />
+            <div>
+              <h2 class="text-xl font-semibold text-slate-900">
+                Generate Worksheet
+              </h2>
+              <p class="text-sm text-slate-500">
+                Upload your Excel file to produce a ready-to-share PDF.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form id="upload-form" class="mt-6 space-y-6">
+          <div class="space-y-3">
+            <div
+              id="drop-zone"
+              class="drop-zone rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-400 focus:outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-400"
+              role="button"
+              tabindex="0"
+              aria-label="Drag and drop Excel file or click to choose"
+            >
+              <p
+                id="drop-zone-text"
+                class="text-base font-semibold text-slate-600"
+              ></p>
+              <p class="mt-2 text-xs text-slate-500">Accepted types: .xlsx</p>
+            </div>
+            <input
+              id="file-input"
+              class="file-input-hidden"
+              type="file"
+              accept=".xlsx"
+              required
+              aria-hidden="true"
+            />
+          </div>
+
+          <button
+            id="submit-btn"
+            type="submit"
+            class="inline-flex w-full items-center justify-center rounded-lg bg-brand-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition duration-150 hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:w-auto cursor-pointer"
+          >
+            Generate Worksheet
+          </button>
+        </form>
+
+        <article
+          id="results"
+          hidden
+          class="mt-8 rounded-xl border border-slate-200 bg-slate-50/80 p-6"
+        >
+          <h3 class="text-lg font-semibold text-slate-900">Success</h3>
+          <dl class="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+            <div>
+              <dt class="font-semibold text-slate-500">Items</dt>
+              <dd
+                id="items-count"
+                class="text-base font-medium text-slate-800"
+              ></dd>
+            </div>
+            <div>
+              <dt class="font-semibold text-slate-500">Pages</dt>
+              <dd
+                id="page-count"
+                class="text-base font-medium text-slate-800"
+              ></dd>
+            </div>
+            <div>
+              <dt class="font-semibold text-slate-500">File name</dt>
+              <dd
+                id="filename"
+                class="text-base font-medium text-slate-800"
+              ></dd>
+            </div>
+          </dl>
+          <div class="mt-6">
+            <a
+              id="download-link"
+              href="#"
+              target="_blank"
+              role="button"
+              class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+            >
+              Download Worksheet
+            </a>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

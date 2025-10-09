@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+reportlab
+pandas
+openpyxl
+google-cloud-storage
+firebase-admin
+python-multipart
+PyYAML

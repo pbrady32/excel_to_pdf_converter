@@ -1,0 +1,25 @@
+[project]
+name = "excel-to-pdf-converter"
+version = "0.1.0"
+description = "Client Worksheet Generator (Excel to fillable PDF)"
+authors = [{ name = "Client Worksheet Team" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "reportlab",
+    "pandas",
+    "openpyxl",
+    "google-cloud-storage",
+    "firebase-admin",
+    "python-multipart"
+]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.uv]
+package = true
+
+[project.optional-dependencies]
+config = ["pyyaml"]

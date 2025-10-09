@@ -1,0 +1,11 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.env
+john-excel-to-pdf-firebase-adminsdk-fbsvc-50755451cc.json
+patrick_testing/
+fwdclientworksheetwebsiteshit/
+sample.pdf
+
+
