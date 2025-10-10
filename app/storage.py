@@ -45,6 +45,7 @@ def signed_url(destination_path: str, expires_in: int = 3600) -> str:
     blob = bucket.blob(destination_path)
     try:
         url = blob.generate_signed_url(expiration=timedelta(seconds=expires_in), method="GET")
+        print("signed url", url)
     except Exception as exc:  # pragma: no cover
         raise StorageError("Failed to generate signed URL") from exc
     return url
