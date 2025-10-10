@@ -6,7 +6,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* requirements.txt* ./
 
 # Install dependencies defined in pyproject via uv sync
-RUN uv sync --system --no-cache
+RUN uv sync --no-cache
 
 # Copy the rest of the application code
 COPY . .
