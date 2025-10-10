@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import os
+import logging
 from datetime import timedelta
-from typing import Optional
 
 from google.cloud import storage
+logger = logging.getLogger(__name__)
+
 
 
 class StorageError(Exception):
@@ -35,6 +37,7 @@ def upload_bytes(data: bytes, destination_path: str, content_type: str = "applic
     try:
         blob.upload_from_string(data, content_type=content_type)
     except Exception as exc:  # pragma: no cover - let caller handle
+        logger.exception("Upload failed for %s", destination_path)
         raise StorageError("Failed to upload PDF to storage") from exc
 
 
@@ -44,10 +47,13 @@ def signed_url(destination_path: str, expires_in: int = 3600) -> str:
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(destination_path)
     try:
-        url = blob.generate_signed_url(expiration=timedelta(seconds=expires_in), method="GET")
-        print("signed url", url)
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(seconds=expires_in),
+            method="GET",
+        )
     except Exception as exc:  # pragma: no cover
-        logging.exception("Signed URL generation failed for %s", destination_path)
+        logger.exception("Signed URL generation failed for %s", destination_path)
         raise StorageError(f"Failed to generate signed URL: {exc}") from exc
     return url
 
