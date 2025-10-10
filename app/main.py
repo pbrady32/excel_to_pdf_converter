@@ -123,7 +123,6 @@ async def generate(
     try:
         layout_cfg_with_year = dict(layout_cfg)
         layout_cfg_with_year["tax_year"] = tax_year
-        print(f"Layout config with year: {layout_cfg_with_year}")
         pdf_bytes, page_count = build_pdf(client_name, items, layout_cfg_with_year, options_cfg)
     except PDFBuildError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

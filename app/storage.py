@@ -47,7 +47,8 @@ def signed_url(destination_path: str, expires_in: int = 3600) -> str:
         url = blob.generate_signed_url(expiration=timedelta(seconds=expires_in), method="GET")
         print("signed url", url)
     except Exception as exc:  # pragma: no cover
-        raise StorageError("Failed to generate signed URL") from exc
+        logging.exception("Signed URL generation failed for %s", destination_path)
+        raise StorageError(f"Failed to generate signed URL: {exc}") from exc
     return url
 
 
