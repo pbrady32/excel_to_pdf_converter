@@ -1,17 +1,14 @@
-FROM python:3.12-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm
 
 WORKDIR /app
 
-COPY pyproject.toml requirements.txt ./
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy pyproject (and optional lockfile/requirements if present)
+COPY pyproject.toml uv.lock* requirements.txt* ./
 
+# Install dependencies defined in pyproject via uv sync
+RUN uv sync --system --no-cache
+
+# Copy the rest of the application code
 COPY . .
 
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8080}"]
