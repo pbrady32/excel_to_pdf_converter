@@ -2,12 +2,16 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm
 
 WORKDIR /app
 
-# Copy pyproject (and optional lockfile/requirements if present)
-COPY pyproject.toml uv.lock* requirements.txt* ./
-
+# copy metadata first so dependency installation layer caches well
 COPY pyproject.toml uv.lock* ./
-# Install dependencies defined in pyproject via uv sync
+
+# copy package source needed while uv sync installs “excel-to-pdf-converter”
+COPY app ./app
+
+# install dependencies (includes project since package=true)
 RUN uv sync --no-cache
 
+# copy the remainder of the repo
 COPY . .
+
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8080}"]
