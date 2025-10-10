@@ -5,10 +5,10 @@ WORKDIR /app
 # Copy pyproject (and optional lockfile/requirements if present)
 COPY pyproject.toml uv.lock* requirements.txt* ./
 
+COPY pyproject.toml uv.lock* ./
+COPY app ./app             # provide the package source for uv sync
 # Install dependencies defined in pyproject via uv sync
 RUN uv sync --no-cache
 
-# Copy the rest of the application code
 COPY . .
-
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8080}"]
