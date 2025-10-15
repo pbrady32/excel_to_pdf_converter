@@ -14,6 +14,7 @@ fonts:
     client_name: 16
     item_text: 12
     column_header: 12
+    instruction_text: 10
 row_layout:
   row_height: 56
   item_text_width: 380

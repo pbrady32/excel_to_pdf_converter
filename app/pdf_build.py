@@ -29,6 +29,7 @@ class Fonts:
     client_name_size: int
     item_text_size: int
     column_header_size: int
+    instruction_text_size: int
 
 
 @dataclass
@@ -98,6 +99,7 @@ def _build_layout(config: dict) -> LayoutConfig:
         client_name_size=config["fonts"]["sizes"]["client_name"],
         item_text_size=config["fonts"]["sizes"]["item_text"],
         column_header_size=config["fonts"]["sizes"]["column_header"],
+        instruction_text_size=config["fonts"]["sizes"]["instruction_text"],
     )
     row_layout = RowLayout(
         row_height=config["row_layout"]["row_height"],
@@ -209,12 +211,12 @@ def _draw_header(
     c.setFont(layout.fonts.base, layout.fonts.client_name_size)
     c.drawString(margins.left, header_bottom - 26.0, client_name)
 
-    if c.getPageNumber() == 1:
-        c.setFont("Helvetica-Oblique", layout.fonts.item_text_size)
-        instruction_text = "Please upload your documents and then mark the below checkbox as uploaded or not needed."
-        c.drawString(margins.left, header_bottom - 46.0, instruction_text)
+    # if c.getPageNumber() == 1:
+    c.setFont("Helvetica-Oblique", layout.fonts.instruction_text_size)
+    instruction_text = "Please upload your documents and then mark the below checkbox as uploaded or not needed."
+    c.drawString(margins.left, header_bottom - 46.0, instruction_text)
 
-    column_y = header_bottom - 70.0
+    column_y = header_bottom - 105.0
     c.setFont(layout.fonts.bold, layout.fonts.column_header_size)
     c.drawString(margins.left, column_y, "Document")
 
@@ -299,6 +301,7 @@ def _draw_item(
         fillColor=colors.white,
         textColor=TEXT_COLOR,
         forceBorder=True,
+        maxlen=75,
     )
 
     checkbox_y = textfield_y + (row.textfield_height - row.checkbox_size) / 2.0

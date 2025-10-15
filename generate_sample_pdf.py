@@ -11,6 +11,7 @@ from app.pdf_build import build_pdf
 def main() -> None:
     layout = yaml.safe_load(Path("config/layout.yaml").read_text(encoding="utf-8"))
     options = yaml.safe_load(Path("config/options.yaml").read_text(encoding="utf-8"))
+    layout["tax_year"] = "2024"
 
     items = [
         "Please upload your W2 from SYNAPSES IOM LLC.",
